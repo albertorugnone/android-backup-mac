@@ -20,3 +20,10 @@ backup.log
 
 # Archivi: il repo non deve contenere copie zippate di se stesso
 *.zip
+
+# AGENTS.md è l'unico file di istruzioni versionato. Alcuni assistenti di codice
+# cercano però un file con un nome proprio: in locale si crea un symlink
+# (ln -s AGENTS.md CLAUDE.md) che non va committato, altrimenti le istruzioni
+# risulterebbero duplicate e potrebbero divergere. Lo slash iniziale limita la
+# regola alla radice del repo.
+/CLAUDE.md
