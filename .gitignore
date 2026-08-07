@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+._*
+
+# Output di backup: non devono MAI finire nel repo
+Backup-Galaxy/
+backup.log
+*.log
+
+# Dati personali
+*.vcf
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.mp4
+
+# Eccezione: le immagini della documentazione vanno versionate
+!docs/img/**
+
+# Archivi: il repo non deve contenere copie zippate di se stesso
+*.zip

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.backup-galaxy</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/TUONOME/Scripts/backup-android.sh</string>
+        <string>/Users/TUONOME/Backup-Galaxy</string>
+    </array>
+
+    <!-- launchd NON eredita il PATH della shell: senza questa chiave adb,
+         installato da Homebrew, non verrebbe mai trovato e il backup
+         fallirebbe a ogni esecuzione. /opt/homebrew per Apple Silicon,
+         /usr/local per Intel. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Ogni domenica alle 20:00 -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>20</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Non in /tmp: macOS la ripulisce e i log sparirebbero. -->
+    <key>StandardOutPath</key>
+    <string>/Users/TUONOME/Library/Logs/backup-galaxy.out</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/TUONOME/Library/Logs/backup-galaxy.err</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>
