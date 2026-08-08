@@ -8,7 +8,14 @@
 # Uso:
 #   ./backup-android.sh                      -> backup in ~/Backup-Galaxy
 #   ./backup-android.sh /Volumi/Disco/Backup -> backup nella cartella indicata
+#   ./backup-android.sh --list-dirs          -> stampa le cartelle sorgente ed esce
 #   DRY_RUN=1 ./backup-android.sh            -> mostra cosa farebbe, senza copiare
+#
+# Variabili d'ambiente:
+#   DRY_RUN=1        non copia nulla, mostra solo cosa farebbe
+#   STATUS_FILE=path scrive l'avanzamento in JSON nel file indicato, aggiornato a
+#                    ogni cartella completata. Se non impostata, lo script si
+#                    comporta esattamente come se questa funzione non esistesse.
 #
 # Codice di uscita: 1 se almeno una copia è fallita, 0 altrimenti. Serve a launchd
 # per accorgersi di un backup andato male.
@@ -17,9 +24,6 @@
 #
 
 set -uo pipefail
-
-DEST="${1:-$HOME/Backup-Galaxy}"
-DRY_RUN="${DRY_RUN:-0}"
 
 # Cartelle da salvare. Aggiungine o toglierne a piacere.
 # Sono ammesse anche radici diverse da /sdcard (per esempio una microSD montata
@@ -35,10 +39,86 @@ REMOTE_DIRS=(
   "/sdcard/Android/media/com.whatsapp"    # media WhatsApp (Android 11+)
 )
 
+# --list-dirs: stampa le cartelle sorgente ed esce, senza toccare adb. Serve a
+# chi integra questo script (il server MCP) per conoscere l'elenco senza doverlo
+# duplicare altrove, e deve funzionare anche a telefono staccato.
+if [[ "${1:-}" == "--list-dirs" ]]; then
+  for remote_dir in "${REMOTE_DIRS[@]}"; do
+    printf '%s\n' "$remote_dir"
+  done
+  exit 0
+fi
+
+DEST="${1:-$HOME/Backup-Galaxy}"
+DRY_RUN="${DRY_RUN:-0}"
+STATUS_FILE="${STATUS_FILE:-}"
+
+TMP=""
+AVVIATO=""
+CARTELLE_FATTE=0
+CARTELLA_CORRENTE=""
+STATO_SCRITTO=""
+total_new=0
+total_diff=0
+total_skip=0
+total_err=0
+
 info() { printf '\033[1;34m==>\033[0m %s\n' "$1"; }
 ok()   { printf '\033[1;32m[ok]\033[0m %s\n' "$1"; }
 warn() { printf '\033[1;33m[!]\033[0m %s\n' "$1"; }
 die()  { printf '\033[1;31m[errore]\033[0m %s\n' "$1" >&2; exit 1; }
+
+# ------------------------------------------------------------- Stato JSON ----
+# Scrive l'avanzamento solo se STATUS_FILE è impostata. La scrittura è atomica
+# (temporaneo + mv) perché il lettore può arrivare in qualsiasi istante e non
+# deve mai trovare un JSON a metà.
+#
+# Qui finiscono solo contatori e valori presi da REMOTE_DIRS, che è una lista
+# fissa scritta nel codice: nessun nome di file proveniente dal telefono, quindi
+# non serve alcun escaping JSON (che in bash 3.2 sarebbe fragile).
+#
+# Non scrive mai su stdout e ingoia i propri errori: un STATUS_FILE non
+# scrivibile non deve disturbare il backup né sporcarne l'output.
+scrivi_stato() {
+  [[ -z "$STATUS_FILE" ]] && return 0
+
+  local stato="$1"
+  local codice="${2:-null}"
+  local corrente="null"
+  local dry="false"
+
+  [[ -n "$CARTELLA_CORRENTE" ]] && corrente="\"$CARTELLA_CORRENTE\""
+  [[ "$DRY_RUN" == "1" ]] && dry="true"
+
+  {
+    printf '{"stato":"%s","avviato":"%s","aggiornato":"%s","dry_run":%s,' \
+      "$stato" "$AVVIATO" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$dry"
+    printf '"cartelle_totali":%s,"cartelle_completate":%s,"cartella_corrente":%s,' \
+      "${#REMOTE_DIRS[@]}" "$CARTELLE_FATTE" "$corrente"
+    printf '"nuovi":%s,"ricopiati":%s,"saltati":%s,"errori":%s,"exit_code":%s}\n' \
+      "$total_new" "$total_diff" "$total_skip" "$total_err" "$codice"
+  } > "$STATUS_FILE.tmp" 2>/dev/null && mv -f "$STATUS_FILE.tmp" "$STATUS_FILE" 2>/dev/null
+
+  STATO_SCRITTO="$stato"
+  return 0
+}
+
+# Pulizia e, se lo script muore prima di dichiarare un esito (die sui controlli
+# iniziali, kill, crash), stato "interrotto": chi legge non deve restare
+# convinto che il backup sia ancora in corso.
+# shellcheck disable=SC2329  # invocata dal trap qui sotto, non da una chiamata diretta
+alla_uscita() {
+  local codice=$?
+  [[ -n "$TMP" ]] && rm -rf "$TMP"
+  case "$STATO_SCRITTO" in
+    completato|fallito) : ;;
+    *) scrivi_stato "interrotto" "$codice" ;;
+  esac
+}
+trap alla_uscita EXIT
+
+[[ -n "$STATUS_FILE" ]] && AVVIATO="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+scrivi_stato "in_corso"
 
 # --------------------------------------------------------------- Controlli ---
 command -v adb >/dev/null 2>&1 || die "adb non trovato. Lancia prima setup-android-mac.sh"
@@ -65,7 +145,6 @@ DEST="$(cd "$DEST" && pwd)" || die "Non riesco a raggiungere $DEST"
 LOG="$DEST/backup.log"
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/backup-galaxy.XXXXXX")" || die "Non riesco a creare una cartella temporanea."
-trap 'rm -rf "$TMP"' EXIT
 
 printf '\n===== %s =====\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
 
@@ -104,14 +183,13 @@ while IFS= read -r riga; do
 done < "$TMP/locale_raw" | LC_ALL=C sort > "$TMP/locale"
 
 # ------------------------------------------------------------------ Backup ---
-total_new=0
-total_diff=0
-total_skip=0
-total_err=0
-
 for remote_dir in "${REMOTE_DIRS[@]}"; do
+  CARTELLA_CORRENTE="$remote_dir"
+
   if ! adb shell "[ -d '$remote_dir' ]" >/dev/null 2>&1; then
     warn "Salto $remote_dir (non esiste o non accessibile)."
+    CARTELLE_FATTE=$((CARTELLE_FATTE + 1))
+    scrivi_stato "in_corso"
     continue
   fi
 
@@ -226,7 +304,12 @@ for remote_dir in "${REMOTE_DIRS[@]}"; do
   total_new=$((total_new + dir_new))
   total_diff=$((total_diff + dir_diff))
   total_skip=$((total_skip + dir_skip))
+
+  CARTELLE_FATTE=$((CARTELLE_FATTE + 1))
+  scrivi_stato "in_corso"
 done
+
+CARTELLA_CORRENTE=""
 
 # ------------------------------------------------------------------ Riepilogo -
 echo
@@ -257,6 +340,8 @@ EOF
 
 if [[ "$total_err" -gt 0 ]]; then
   warn "$total_err file non sono stati copiati. Dettagli in $LOG"
+  scrivi_stato "fallito" 1
   exit 1
 fi
+scrivi_stato "completato" 0
 exit 0
