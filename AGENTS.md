@@ -32,6 +32,15 @@ che li ignorano.
 
 ## Convenzioni del codice
 
+- **Python è ammesso solo dentro `mcp/`.** Tutto il resto del progetto è e resta
+  bash: gli script devono funzionare da terminale e da launchd senza interprete
+  Python installato.
+- **Il server MCP non deve mai reimplementare la logica di backup.** È un wrapper
+  sottile che invoca `scripts/backup-android.sh` come sottoprocesso. Una sola
+  fonte di verità: se al server serve un dato dallo script (per esempio l'elenco
+  delle cartelle), si aggiunge una flag allo script, non una copia nel server.
+- **Mai creare `mcp/__init__.py`.** Renderebbe `mcp/` un package regolare che
+  oscurerebbe l'SDK omonimo installato nel venv, rompendo ogni import.
 - Bash, target `/usr/bin/env bash`. macOS ha bash 3.2 come `/bin/bash`: **non usare
   array associativi, `${var^^}` o altre feature bash 4+.**
 - `set -euo pipefail` negli script di setup; negli script di backup si usa
@@ -45,19 +54,32 @@ che li ignorano.
 
 ## Verifica delle modifiche
 
-Non c'è una suite di test. Prima di considerare finito un intervento:
+La parte bash non ha test propri; il server MCP sì, e coprono anche il contratto
+con gli script. Prima di considerare finito un intervento:
 
 ```bash
 bash -n scripts/*.sh              # controllo sintassi
 shellcheck scripts/*.sh           # se disponibile
+mcp/.venv/bin/python -m pytest mcp      # suite MCP, NON richiede il telefono
 DRY_RUN=1 ./scripts/backup-android.sh   # richiede un telefono collegato
 ```
 
+La suite in `mcp/tests/` copre anche il contratto fra server e script bash
+(`--list-dirs`, `STATUS_FILE`) usando un adb finto: se tocchi
+`backup-android.sh`, rilanciala.
+
 Gli script vanno testati su macOS con un dispositivo reale: in CI non è possibile.
+Quello che richiede il telefono è elencato in `docs/mcp-verifica-manuale.md`.
 Se non puoi testare, dichiaralo esplicitamente invece di dare per riuscito.
 
 ## Idee di sviluppo
 
+- [x] Server MCP in sola lettura per pilotare i backup da un assistente — fatto:
+      cinque tool tipizzati in `mcp/server.py`, wrapper sottile sugli script
+- [ ] Indice del backup (`$DEST/.galaxy-backup-index.tsv`) scritto a fine giro:
+      **additivo**, mai autorità sui salti. La scansione del filesystem deve
+      restare la fonte di verità, altrimenti un indice divergente fa perdere file
+      in silenzio. Serve da base per `--mirror` e per la deduplica per hash
 - [ ] Modalità `--mirror` che segnala (senza cancellare) i file spariti dal telefono
 - [ ] Deduplica per hash invece che per sola esistenza del path
 - [x] Verifica di integrità post-copia (confronto dimensione o checksum) — fatto:
@@ -69,6 +91,11 @@ Se non puoi testare, dichiaralo esplicitamente invece di dare per riuscito.
 
 ## Cosa NON fare
 
+- **Non esporre dal server MCP tool generici di esecuzione comandi** (`run_command`,
+  `adb_raw` e simili), né passare ad `adb shell` stringhe fornite dal modello.
+  Sarebbe la negazione del motivo per cui il server esiste. Restano fuori
+  perimetro anche `adb push`, `adb install`, la cancellazione di file, la revoca
+  delle autorizzazioni e il factory reset: se sembrano servire, chiedere prima.
 - Non aggiungere dipendenze da app a pagamento (MacDroid, AnyTrans e simili).
 - Non suggerire il caricamento automatico su cloud: il punto del progetto è che il
   backup resti locale.

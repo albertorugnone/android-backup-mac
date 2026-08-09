@@ -29,9 +29,13 @@ galaxy-backup-mac/
 │   └── backup-android.sh           # backup incrementale via adb
 ├── launchd/
 │   └── local.backup-galaxy.plist   # schedulazione settimanale
+├── mcp/
+│   ├── server.py                   # server MCP, in sola lettura
+│   └── tests/                      # suite pytest, gira senza telefono
 └── docs/
     ├── device-galaxy-a31.md        # scheda del dispositivo, limiti noti
     ├── wallpaper-recovery.md       # come recuperare sfondo e lock screen
+    ├── mcp-verifica-manuale.md     # cosa provare col telefono collegato
     └── pre-reset-checklist.md      # cosa fare PRIMA del factory reset
 ```
 
@@ -128,10 +132,80 @@ eredita il PATH della shell e senza quella chiave `adb` non verrebbe trovato.
 - `backup-android.sh` esce con codice 1 se almeno una copia è fallita, così il
   backup schedulato può essere monitorato.
 
+---
+
+## Server MCP (opzionale)
+
+`mcp/server.py` espone il backup a un assistente AI attraverso cinque operazioni
+tipizzate: `device_status`, `backup_inventory`, `backup_start`, `backup_status`,
+`capture_screen`.
+
+**È in sola lettura sul telefono.** Non può cancellare file, non può installare o
+rimuovere app, non espone `adb shell` né alcun tool generico di esecuzione
+comandi. Il backup lo avvia soltanto verso una destinazione dentro la tua
+cartella utente.
+
+Il senso non è dare nuove capacità — gli script si lanciano già da terminale — ma
+*restringere* ciò che un assistente può fare: senza MCP, un agente con accesso a
+bash ha di fatto `adb shell`, cioè esecuzione arbitraria sul dispositivo.
+
+> **Nota onesta sul confinamento.** La restrizione vale solo dove l'assistente non
+> ha *anche* un accesso a bash. In un client che espone un tool shell (come Claude
+> Code nella configurazione predefinita) l'MCP è una comodità, non una barriera:
+> per ottenere il confinamento vero va negato l'accesso a bash, oppure va usato un
+> client che non ce l'ha, come Claude Desktop.
+
+### Installazione
+
+Richiede Python 3.10+ e [uv](https://docs.astral.sh/uv/). Le dipendenze stanno in
+un virtualenv locale al progetto, niente installazioni globali:
+
+```bash
+uv venv --python 3.12 mcp/.venv
+VIRTUAL_ENV=mcp/.venv uv pip install mcp==2.0.0 pytest==9.1.1
+mcp/.venv/bin/python -m pytest mcp      # 56 test, non serve il telefono
+```
+
+### Claude Code
+
+```bash
+claude mcp add galaxy-backup -- "$PWD/mcp/.venv/bin/python" "$PWD/mcp/server.py"
+```
+
+### Claude Desktop
+
+Il file di configurazione su macOS sta in
+`~/Library/Application Support/Claude/claude_desktop_config.json`. I percorsi
+devono essere **assoluti**: sostituisci `/PERCORSO/DEL/REPO` con l'output di `pwd`
+eseguito nella cartella del progetto.
+
+```json
+{
+  "mcpServers": {
+    "galaxy-backup": {
+      "command": "/PERCORSO/DEL/REPO/mcp/.venv/bin/python",
+      "args": ["/PERCORSO/DEL/REPO/mcp/server.py"]
+    }
+  }
+}
+```
+
+Riavvia Claude Desktop dopo la modifica.
+
+### Stato dei backup
+
+I job vivono in `~/.galaxy-backup/jobs/` come file JSON, quindi sopravvivono al
+riavvio del server. Un backup avviato via MCP continua anche se il server viene
+chiuso. Le schermate catturate finiscono in `~/.galaxy-backup/screenshots/`.
+
+---
+
 ## Requisiti
 
 macOS (Intel o Apple Silicon) · Homebrew · cavo USB dati (non solo ricarica) ·
 Debug USB attivo sul telefono
+
+Per il server MCP, in più: Python 3.10+ e uv.
 
 ## Licenza
 
