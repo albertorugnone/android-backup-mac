@@ -40,6 +40,26 @@ adb exec-out find /sdcard/DCIM -maxdepth 0 -exec stat -c '%s|%n' {} +
       confronto per sola presenza. Verificare che non crolli né mentendo né in
       silenzio
 
+## 2-bis. Convivenza con Smart Switch (questione aperta)
+
+Non è documentata da nessuna fonte affidabile, in nessuna delle due direzioni, e
+**non è verificabile senza il telefono**. Questa è la prova che la chiude:
+
+```bash
+adb devices                 # deve mostrare il seriale + "device"
+# installa Smart Switch, aprilo, chiudilo
+adb kill-server && adb devices
+```
+
+- [ ] Con Smart Switch **installato ma chiuso**, `adb devices` vede ancora il telefono?
+- [ ] Con Smart Switch **aperto**, `adb devices` lo vede ancora?
+- [ ] Al contrario: con un demone adb attivo (`adb start-server`), Smart Switch
+      riesce a rilevare il telefono?
+
+Qualunque sia l'esito, annotarlo in `docs/pre-reset-checklist.md` sostituendo la
+formula prudenziale con il fatto accertato. Se emergesse che si bloccano davvero,
+diventa un vincolo da mettere in `AGENTS.md`.
+
 ## 3. Inventario
 
 - [ ] `backup_inventory()` su tutte le cartelle: i conteggi devono somigliare a

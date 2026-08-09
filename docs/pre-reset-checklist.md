@@ -6,11 +6,37 @@ quello attualmente in uso. Da fare in quest'ordine.
 ## 1. Backup
 
 - [ ] Backup completo con Samsung Smart Switch (`~/Documenti/Samsung/SmartSwitch/`)
+- [ ] **Chiudi Smart Switch e lancia `adb kill-server`** prima di passare al punto
+      successivo — e viceversa, prima di riaprire Smart Switch (vedi nota qui sotto)
 - [ ] Backup dei media con `./scripts/backup-android.sh`
 - [ ] Screenshot dello sfondo e della schermata di blocco → vedi
       [wallpaper-recovery.md](wallpaper-recovery.md)
 - [ ] Verifica che il backup sia leggibile **prima** di resettare: apri qualche foto
       dal Mac, non fidarti del "completato" a schermo
+
+### Non usare Smart Switch e adb nello stesso momento
+
+Sono due programmi che vogliono lo stesso telefono sulla stessa porta USB. Una
+sola cosa è **documentata con certezza**: Smart Switch installa un'estensione di
+sistema che intercetta MTP e impedisce a OpenMTP di vedere il dispositivo — per
+questo il README consiglia di disinstallarlo prima di passare a OpenMTP. Samsung
+stessa avverte inoltre che Smart Switch non convive con Android File Transfer.
+
+Sull'interazione con **adb** non esiste documentazione ufficiale in nessuna delle
+due direzioni. Qualche fonte di scarsa qualità sostiene che un demone adb attivo
+tenga occupata la porta e impedisca a Smart Switch di rilevare il telefono: non è
+dimostrato, ma il demone adb *resta davvero in esecuzione* dopo ogni backup, e la
+precauzione non costa nulla.
+
+Quindi, per prudenza e non perché sia un fatto accertato:
+
+```bash
+adb kill-server      # prima di aprire Smart Switch
+```
+
+Se dopo aver usato Smart Switch `adb devices` non vedesse più il telefono,
+scollega e ricollega il cavo, e in caso disinstalla Smart Switch: il backup dei
+media non ne ha bisogno.
 
 ## 2. Dati che non sopravvivono al cambio di account
 

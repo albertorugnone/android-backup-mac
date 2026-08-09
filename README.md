@@ -82,6 +82,16 @@ impedisce a OpenMTP di rilevare il dispositivo. Gli sviluppatori di OpenMTP
 raccomandano di disinstallarlo. Vedi
 <https://github.com/ganeshrvel/openmtp#troubleshooting>.
 
+Samsung avverte inoltre che Smart Switch **non convive con Android File Transfer**:
+se hai l'app di Google installata, Smart Switch non parte finché non la rimuovi.
+Vedi la
+[FAQ ufficiale](https://www.samsung.com/au/apps/smart-switch/faq-smart-switch-pc-or-mac).
+
+Sull'interazione fra Smart Switch e **adb** non esiste documentazione ufficiale, in
+nessuna delle due direzioni. Per prudenza non usarli insieme: `adb kill-server`
+prima di aprire Smart Switch. I dettagli, e cosa è dimostrato e cosa no, stanno in
+[docs/pre-reset-checklist.md](docs/pre-reset-checklist.md).
+
 Smart Switch **non** è disponibile su Homebrew: va scaricato manualmente da
 <https://www.samsung.com/it/apps/smart-switch/>.
 
