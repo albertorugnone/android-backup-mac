@@ -1,0 +1,23 @@
+[project]
+name = "galaxy-backup-mcp"
+version = "0.1.0"
+description = "Server MCP in sola lettura per il backup di un Samsung Galaxy su macOS"
+requires-python = ">=3.10"
+
+# Versioni bloccate a valore esatto: questo server pilota backup di dati
+# personali, un aggiornamento non voluto dell'SDK non deve cambiargli il
+# comportamento sotto i piedi.
+dependencies = [
+    "mcp==2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# "." è questa cartella (mcp/), non la radice del repo: serve a rendere
+# importabile server.py senza mettere la radice in sys.path.
+pythonpath = ["."]

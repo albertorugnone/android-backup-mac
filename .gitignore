@@ -21,6 +21,11 @@ backup.log
 # Archivi: il repo non deve contenere copie zippate di se stesso
 *.zip
 
+# Ambiente virtuale del server MCP: si ricrea con uv, non si versiona
+mcp/.venv/
+__pycache__/
+.pytest_cache/
+
 # AGENTS.md è l'unico file di istruzioni versionato. Alcuni assistenti di codice
 # cercano però un file con un nome proprio: in locale si crea un symlink
 # (ln -s AGENTS.md CLAUDE.md) che non va committato, altrimenti le istruzioni
