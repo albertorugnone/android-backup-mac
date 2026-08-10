@@ -41,7 +41,7 @@ def prepara_job(amb, job_id, pid, stato):
     (cartella / f"{job_id}.json").write_text(
         json.dumps({
             "job_id": job_id,
-            "destinazione": str(amb.casa / "Backup-Galaxy"),
+            "destinazione": str(amb.casa / "Backup-Android"),
             "dry_run": False,
             "pid": pid,
             "avviato": "2026-08-09T10:00:00Z",
@@ -72,14 +72,14 @@ def test_avvio_e_completamento(amb):
     assert esito["nuovi"] == 4
     assert esito["cartelle_completate"] == esito["cartelle_totali"] == 7
     # i file sono davvero arrivati
-    assert (amb.casa / "Backup-Galaxy" / "DCIM" / "Camera" / "foto1.jpg").exists()
+    assert (amb.casa / "Backup-Android" / "DCIM" / "Camera" / "foto1.jpg").exists()
 
 
 def test_avvio_dry_run_non_copia(amb):
     avvio = esegui(amb.server.backup_start(dry_run=True))
     attendi_esito(amb.server, avvio["job_id"])
     assert avvio["dry_run"] is True
-    assert not (amb.casa / "Backup-Galaxy" / "DCIM").exists()
+    assert not (amb.casa / "Backup-Android" / "DCIM").exists()
 
 
 def test_avvio_senza_dispositivo(amb, monkeypatch):
@@ -91,7 +91,7 @@ def test_avvio_senza_dispositivo(amb, monkeypatch):
 
 def test_destinazione_non_scrivibile(amb):
     """Un file al posto della cartella: il messaggio deve parlare di permessi."""
-    ostacolo = amb.casa / "Backup-Galaxy"
+    ostacolo = amb.casa / "Backup-Android"
     ostacolo.write_text("sono un file, non una cartella")
     with pytest.raises(MCPError) as e:
         esegui(amb.server.backup_start())
@@ -182,7 +182,7 @@ def test_stato_corrotto_con_processo_vivo(amb, contenuto):
 def test_errori_recenti_troncati_a_50(amb):
     """Un backup con migliaia di errori non deve saturare il contesto."""
     prepara_job(amb, "20260809-060000", _pid_terminato(), "fallito")
-    destinazione = amb.casa / "Backup-Galaxy"
+    destinazione = amb.casa / "Backup-Android"
     destinazione.mkdir(parents=True, exist_ok=True)
     righe = [f"FAIL nuovo    DCIM/Camera/foto{n}.jpg" for n in range(200)]
     (destinazione / "backup.log").write_text("\n".join(righe), encoding="utf-8")

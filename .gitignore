@@ -3,7 +3,7 @@
 ._*
 
 # Output di backup: non devono MAI finire nel repo
-Backup-Galaxy/
+Backup-Android/
 backup.log
 *.log
 

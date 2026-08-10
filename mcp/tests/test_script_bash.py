@@ -45,7 +45,7 @@ def test_list_dirs_funziona_senza_adb(amb):
 
 def test_list_dirs_non_crea_la_destinazione(amb):
     lancia(amb, ["--list-dirs"], senza_adb=True)
-    assert not (amb.casa / "Backup-Galaxy").exists()
+    assert not (amb.casa / "Backup-Android").exists()
 
 
 def test_elenco_dello_script_e_quello_del_server(amb):

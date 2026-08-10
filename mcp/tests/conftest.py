@@ -59,7 +59,7 @@ def amb(tmp_path, monkeypatch):
     for variabile in ("FAKE_STATE", "FAKE_NO_STAT", "FAKE_FAIL_ON", "STATUS_FILE", "DRY_RUN"):
         monkeypatch.delenv(variabile, raising=False)
 
-    stato = casa / ".galaxy-backup"
+    stato = casa / ".android-backup"
     monkeypatch.setattr(server, "CARTELLA_STATO", stato)
     monkeypatch.setattr(server, "CARTELLA_JOB", stato / "jobs")
     monkeypatch.setattr(server, "CARTELLA_SCHERMATE", stato / "screenshots")

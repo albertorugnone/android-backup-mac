@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
 # backup-android.sh
-# Backup incrementale delle cartelle multimediali di un Samsung Galaxy su Mac,
+# Backup incrementale delle cartelle multimediali di un dispositivo Android su Mac,
 # tramite adb. Copia solo i file mancanti o rimasti incompleti, quindi puoi
 # rilanciarlo tutte le volte che vuoi senza riscaricare tutto.
 #
 # Uso:
-#   ./backup-android.sh                      -> backup in ~/Backup-Galaxy
+#   ./backup-android.sh                      -> backup in ~/Backup-Android
 #   ./backup-android.sh /Volumi/Disco/Backup -> backup nella cartella indicata
 #   ./backup-android.sh --list-dirs          -> stampa le cartelle sorgente ed esce
 #   DRY_RUN=1 ./backup-android.sh            -> mostra cosa farebbe, senza copiare
@@ -49,7 +49,7 @@ if [[ "${1:-}" == "--list-dirs" ]]; then
   exit 0
 fi
 
-DEST="${1:-$HOME/Backup-Galaxy}"
+DEST="${1:-$HOME/Backup-Android}"
 DRY_RUN="${DRY_RUN:-0}"
 STATUS_FILE="${STATUS_FILE:-}"
 
@@ -144,7 +144,7 @@ mkdir -p "$DEST" || die "Non riesco a creare $DEST"
 DEST="$(cd "$DEST" && pwd)" || die "Non riesco a raggiungere $DEST"
 LOG="$DEST/backup.log"
 
-TMP="$(mktemp -d "${TMPDIR:-/tmp}/backup-galaxy.XXXXXX")" || die "Non riesco a creare una cartella temporanea."
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/backup-android.XXXXXX")" || die "Non riesco a creare una cartella temporanea."
 
 printf '\n===== %s =====\n' "$(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
 

@@ -53,7 +53,7 @@ case "$comando" in
     case "$sub" in
       getprop)
         case "${1:-}" in
-          ro.product.model)          echo "SM-A315F" ;;
+          ro.product.model)          echo "TEST-DEVICE-1" ;;
           ro.build.version.release)  echo "12" ;;
           *)                         echo "" ;;
         esac

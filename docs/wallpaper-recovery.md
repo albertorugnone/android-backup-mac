@@ -46,16 +46,17 @@ giusta:
 adb exec-out screencap -p > ~/Desktop/sfondo.png
 ```
 
-## Metodo 3 — sfondi di Galaxy Themes
+## Metodo 3 — sfondi presi dallo store del produttore
 
-Se lo sfondo viene dallo store Samsung, annota il nome del tema o dello sfondo.
-Dopo il reset lo riscarichi gratis accedendo con lo **stesso account Samsung**:
-gli acquisti Samsung non dipendono dall'account Google.
+Se lo sfondo viene da uno store del produttore (Galaxy Themes e simili), annota il
+nome del tema o dello sfondo: dopo il reset lo riscarichi gratis riaccedendo con lo
+**stesso account del produttore**, che è indipendente da quello Google. Per Samsung
+i dettagli sono in [vendor-samsung.md](vendor-samsung.md).
 
 ## Rimettere lo sfondo dopo il reset
 
 ```bash
-adb push ~/Backup-Galaxy/Pictures/sfondo.jpg /sdcard/Pictures/
+adb push ~/Backup-Android/Pictures/sfondo.jpg /sdcard/Pictures/
 ```
 
 Poi dal telefono: Galleria > apri l'immagine > menu > Imposta come sfondo.

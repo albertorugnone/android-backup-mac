@@ -20,17 +20,17 @@ def esegui(coro):
 
 
 def test_destinazione_predefinita(amb):
-    assert amb.server._valida_destinazione(None) == amb.casa / "Backup-Galaxy"
+    assert amb.server._valida_destinazione(None) == amb.casa / "Backup-Android"
 
 
 def test_destinazione_valida(amb):
-    scelta = amb.casa / "Foto" / "Galaxy"
+    scelta = amb.casa / "Foto" / "Telefono"
     assert amb.server._valida_destinazione(str(scelta)) == scelta
 
 
 def test_destinazione_relativa_rifiutata(amb):
     with pytest.raises(MCPError) as e:
-        amb.server._valida_destinazione("Backup-Galaxy")
+        amb.server._valida_destinazione("Backup-Android")
     assert "assoluto" in str(e.value)
 
 

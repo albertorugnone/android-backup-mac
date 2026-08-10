@@ -5,12 +5,18 @@ di un assistente di codice.
 
 ## Cos'è questo progetto
 
-Toolkit bash per macOS che automatizza il backup locale di uno smartphone Samsung
-Galaxy e la preparazione a un factory reset con cambio di account Google.
+Toolkit bash per macOS che automatizza il backup locale di uno smartphone Android
+e la preparazione a un factory reset con cambio di account Google.
 
-Utente di riferimento: possessore di un Galaxy A31 su Mac, obiettivo finale
-resettare il telefono e associarvi un account Google personale diverso da quello
-attuale.
+**Il nucleo è Android generico e deve restare tale.** Le cartelle in `REMOTE_DIRS`
+sono le costanti standard di Android e i comandi adb usati sono AOSP: non
+introdurre dipendenze da una marca specifica in `scripts/`, `mcp/` o nel README.
+Ciò che vale per un solo produttore va in una pagina a parte — per Samsung,
+`docs/vendor-samsung.md` — e va marcato come opzionale.
+
+Il dispositivo di riferimento su cui è nato il progetto è un Galaxy A31 su Mac,
+con l'obiettivo di resettarlo e associarvi un account Google diverso da quello
+attuale: la scheda del dispositivo sta nella pagina vendor.
 
 ## Vincoli tecnici da rispettare
 
@@ -21,10 +27,12 @@ che li ignorano.
    telefono. `libmtp` e `simple-mtpfs` su macOS richiedono macFUSE, che su Apple
    Silicon con SIP attivo è fragile: evitali.
 2. **adb è l'unica via affidabile per lo scripting.** Ogni automazione passa da lì.
-3. **Smart Switch non ha CLI.** Il suo backup è GUI-only e in formato proprietario:
-   non è automatizzabile. Non scrivere script che pretendono di pilotarlo.
-4. **Smart Switch e OpenMTP non convivono.** Smart Switch installa un'estensione di
-   sistema che rompe MTP per le altre app.
+3. **Le utility dei produttori non hanno CLI.** Smart Switch e simili fanno backup
+   GUI-only in formato proprietario: non sono automatizzabili. Non scrivere script
+   che pretendono di pilotarle.
+4. **Alcune di quelle utility rompono MTP per le altre app**, installando
+   un'estensione di sistema che intercetta il protocollo. Il backup via adb non ne
+   è toccato. Dettagli in `docs/vendor-samsung.md`.
 5. **Niente root.** Il dispositivo non è rootato. Tutto ciò che sta in
    `/data/data/` e `/data/system/` è fuori portata.
 6. **`adb shell` introduce CRLF.** Usare `adb exec-out` per l'output da parsare, con
@@ -76,7 +84,7 @@ Se non puoi testare, dichiaralo esplicitamente invece di dare per riuscito.
 
 - [x] Server MCP in sola lettura per pilotare i backup da un assistente — fatto:
       cinque tool tipizzati in `mcp/server.py`, wrapper sottile sugli script
-- [ ] Indice del backup (`$DEST/.galaxy-backup-index.tsv`) scritto a fine giro:
+- [ ] Indice del backup (`$DEST/.android-backup-index.tsv`) scritto a fine giro:
       **additivo**, mai autorità sui salti. La scansione del filesystem deve
       restare la fonte di verità, altrimenti un indice divergente fa perdere file
       in silenzio. Serve da base per `--mirror` e per la deduplica per hash

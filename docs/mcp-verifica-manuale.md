@@ -2,7 +2,7 @@
 
 La suite in `mcp/tests/` gira con un adb finto e copre logica, validazioni e
 gestione dei job. **Non può verificare nulla che dipenda dal telefono vero.**
-Questa è la lista di ciò che va provato a mano, una volta, con il Galaxy
+Questa è la lista di ciò che va provato a mano, una volta, col telefono
 collegato.
 
 Prima di cominciare:
@@ -15,7 +15,8 @@ adb devices                            # deve mostrare il seriale seguito da "de
 ## 1. Rilevamento del dispositivo
 
 - [ ] `device_status` con telefono collegato e autorizzato: `collegato: true`,
-      modello corretto (`SM-A315F` sull'A31), versione Android corretta
+      modello e versione di Android corretti (confrontali con Impostazioni >
+      Info sul telefono)
 - [ ] **Spazio libero plausibile.** È il dato più a rischio: viene dall'output di
       `df -k /sdcard`, il cui formato può variare fra versioni di toybox.
       Confrontalo con Impostazioni > Assistenza dispositivo > Archiviazione.
@@ -27,8 +28,8 @@ adb devices                            # deve mostrare il seriale seguito da "de
 
 ## 2. Supporto a `stat -c` (il punto più incerto)
 
-L'A31 monta Android 12 con toybox. Se `stat -c` non fosse supportato, si perdono
-sia le dimensioni nell'inventario sia il rilevamento dei file troncati.
+Android usa toybox, e il supporto a `stat -c` varia con la versione. Se mancasse,
+si perdono sia le dimensioni nell'inventario sia il rilevamento dei file troncati.
 
 ```bash
 adb exec-out find /sdcard/DCIM -maxdepth 0 -exec stat -c '%s|%n' {} +
@@ -40,25 +41,12 @@ adb exec-out find /sdcard/DCIM -maxdepth 0 -exec stat -c '%s|%n' {} +
       confronto per sola presenza. Verificare che non crolli né mentendo né in
       silenzio
 
-## 2-bis. Convivenza con Smart Switch (questione aperta)
+## 2-bis. Convivenza con le utility del produttore
 
-Non è documentata da nessuna fonte affidabile, in nessuna delle due direzioni, e
-**non è verificabile senza il telefono**. Questa è la prova che la chiude:
-
-```bash
-adb devices                 # deve mostrare il seriale + "device"
-# installa Smart Switch, aprilo, chiudilo
-adb kill-server && adb devices
-```
-
-- [ ] Con Smart Switch **installato ma chiuso**, `adb devices` vede ancora il telefono?
-- [ ] Con Smart Switch **aperto**, `adb devices` lo vede ancora?
-- [ ] Al contrario: con un demone adb attivo (`adb start-server`), Smart Switch
-      riesce a rilevare il telefono?
-
-Qualunque sia l'esito, annotarlo in `docs/pre-reset-checklist.md` sostituendo la
-formula prudenziale con il fatto accertato. Se emergesse che si bloccano davvero,
-diventa un vincolo da mettere in `AGENTS.md`.
+Se usi anche l'utility desktop del produttore, c'è una questione aperta sulla
+convivenza con adb: la verifica sta in
+[vendor-samsung.md](vendor-samsung.md#smart-switch-e-adb), perché è specifica di
+quel software.
 
 ## 3. Inventario
 
@@ -82,13 +70,13 @@ diventa un vincolo da mettere in `AGENTS.md`.
 - [ ] **Chiudi il client MCP mentre il backup gira**, riaprilo e chiama
       `backup_status`: il backup deve essere andato avanti lo stesso
 - [ ] A fine giro: `completato`, `exit_code: 0`, e i file sono davvero in
-      `~/Backup-Galaxy`, apribili in Anteprima
+      `~/Backup-Android`, apribili in Anteprima
 - [ ] Rilancia: quasi tutto deve risultare "già presente", pochi secondi
 
 ## 5. Cattura schermo
 
 - [ ] `capture_screen` con schermo acceso: il PNG in
-      `~/.galaxy-backup/screenshots/` si apre e mostra la schermata giusta
+      `~/.android-backup/screenshots/` si apre e mostra la schermata giusta
 - [ ] Ripeti la procedura di `wallpaper-recovery.md`: Impostazioni > Sfondo e
       stile > anteprima a schermo intero, poi `capture_screen`
 - [ ] A schermo spento: deve dare un errore comprensibile, non un file corrotto
@@ -109,5 +97,5 @@ l'assistente non ha un tool shell.
 
 ## 7. Se qualcosa non torna
 
-I log dei job stanno in `~/.galaxy-backup/jobs/<job_id>.log`, lo stato in
-`<job_id>.progress.json`. Il log dei file copiati è in `~/Backup-Galaxy/backup.log`.
+I log dei job stanno in `~/.android-backup/jobs/<job_id>.log`, lo stato in
+`<job_id>.progress.json`. Il log dei file copiati è in `~/Backup-Android/backup.log`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # setup-android-mac.sh
-# Installa gli strumenti per gestire un Samsung Galaxy da macOS:
+# Installa gli strumenti per gestire un dispositivo Android da macOS:
 #   - Homebrew (se mancante)
 #   - OpenMTP        -> sfoglia/copia file dal telefono via GUI
 #   - platform-tools -> adb, per i backup automatizzati da terminale
@@ -50,19 +50,24 @@ install_cask() {
 install_cask openmtp                "OpenMTP"
 install_cask android-platform-tools "Android platform-tools (adb)"
 
-# --------------------------------------------------- Smart Switch (manuale) ---
-SMARTSWITCH_URL="https://www.samsung.com/it/apps/smart-switch/"
-
+# --------------------------------------------------- Conflitti noti su MTP ---
+# Alcune utility dei produttori installano un'estensione di sistema che
+# intercetta MTP e impedisce a OpenMTP di vedere il telefono. Qui ci limitiamo a
+# segnalarle se sono presenti: lo script non installa né rimuove software di
+# terze parti.
 echo
-if [[ -d "/Applications/Smart Switch.app" ]]; then
-  warn "Smart Switch risulta installato."
-  warn "Attenzione: Smart Switch installa un'estensione di sistema che intercetta"
-  warn "il protocollo MTP e può impedire a OpenMTP di vedere il telefono."
-  warn "Se OpenMTP non rileva il dispositivo, disinstalla Smart Switch e riprova."
+conflitti=0
+for app in "/Applications/Smart Switch.app" "/Applications/Android File Transfer.app"; do
+  if [[ -d "$app" ]]; then
+    conflitti=$((conflitti + 1))
+    warn "$(basename "$app" .app) è installato: può impedire a OpenMTP di vedere il telefono."
+  fi
+done
+if [[ "$conflitti" -gt 0 ]]; then
+  warn "Se OpenMTP non rileva il dispositivo, disinstallalo e riprova."
+  warn "Dettagli in docs/vendor-samsung.md. Il backup via adb non ne è toccato."
 else
-  info "Smart Switch non ha un pacchetto Homebrew: va scaricato dal sito Samsung."
-  read -r -p "    Apro ora la pagina di download nel browser? [s/N] " reply
-  [[ "$reply" =~ ^[SsYy]$ ]] && open "$SMARTSWITCH_URL"
+  ok "Nessuna utility in conflitto con MTP rilevata."
 fi
 
 # ------------------------------------------------------------------ Verifica --
@@ -80,7 +85,7 @@ cat <<'EOF'
 --------------------------------------------------------------------------
 PROSSIMI PASSI SUL TELEFONO (una tantum, per usare adb)
 
-  1. Impostazioni > Info sul telefono > Informazioni software
+  1. Impostazioni > Info sul telefono (su alcune marche: > Informazioni software)
      -> tocca "Numero build" 7 volte finché non compare
         "Modalità sviluppatore attivata".
   2. Impostazioni > Opzioni sviluppatore -> attiva "Debug USB".

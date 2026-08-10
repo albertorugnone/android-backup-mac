@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Server MCP in sola lettura per il backup di un Samsung Galaxy su macOS.
+"""Server MCP in sola lettura per il backup di un dispositivo Android su macOS.
 
 Espone cinque operazioni tipizzate al posto dell'accesso a bash. Il punto non è
 dare nuove capacità a un assistente — gli script si lanciano già da terminale —
@@ -36,7 +36,7 @@ from mcp.types import INVALID_PARAMS, INTERNAL_ERROR
 RADICE_REPO = Path(__file__).resolve().parent.parent
 SCRIPT_BACKUP = RADICE_REPO / "scripts" / "backup-android.sh"
 
-CARTELLA_STATO = Path.home() / ".galaxy-backup"
+CARTELLA_STATO = Path.home() / ".android-backup"
 CARTELLA_JOB = CARTELLA_STATO / "jobs"
 CARTELLA_SCHERMATE = CARTELLA_STATO / "screenshots"
 
@@ -53,7 +53,7 @@ MAX_ELEMENTI = 50
 TIMEOUT_RAPIDO = 20
 TIMEOUT_ENUMERAZIONE = 600
 
-mcp = MCPServer("galaxy-backup")
+mcp = MCPServer("android-backup")
 
 
 class ErroreUtente(Exception):
@@ -207,14 +207,14 @@ def _valida_destinazione(destination: str | None) -> Path:
     Il percorso reale si risolve PRIMA di controllare il prefisso: un symlink
     che punta fuori da $HOME passerebbe un controllo fatto sulla stringa."""
     if destination is None:
-        return Path.home() / "Backup-Galaxy"
+        return Path.home() / "Backup-Android"
 
     candidato = Path(destination)
     if not candidato.is_absolute():
         raise MCPError(
             INVALID_PARAMS,
             "La destinazione deve essere un percorso assoluto, per esempio "
-            f"{Path.home()}/Backup-Galaxy",
+            f"{Path.home()}/Backup-Android",
         )
 
     reale = candidato.expanduser().resolve()
@@ -440,7 +440,7 @@ async def backup_start(
     `backup_status` per seguirne l'avanzamento.
 
     `destination` deve essere un percorso assoluto dentro la tua cartella utente;
-    se omesso usa ~/Backup-Galaxy. Con `dry_run` lo script elenca cosa copierebbe
+    se omesso usa ~/Backup-Android. Con `dry_run` lo script elenca cosa copierebbe
     senza copiare nulla.
 
     Un solo backup alla volta: se ne è già in corso uno, non ne avvia un secondo
@@ -467,7 +467,7 @@ async def backup_start(
 
     try:
         destinazione.mkdir(parents=True, exist_ok=True)
-        sonda = destinazione / ".galaxy-backup-scrittura"
+        sonda = destinazione / ".android-backup-scrittura"
         sonda.touch()
         sonda.unlink()
     except OSError as e:

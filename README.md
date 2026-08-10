@@ -1,10 +1,14 @@
-# galaxy-backup-mac
+# android-backup-mac
 
-Toolkit per fare il backup locale di uno smartphone Samsung Galaxy su macOS, senza
-passare dal cloud, e per prepararlo a un reset di fabbrica con cambio di account Google.
+Toolkit per fare il backup locale di uno smartphone Android su macOS, senza passare
+dal cloud, e per prepararlo a un reset di fabbrica con cambio di account Google.
 
-Nato per un **Galaxy A31**, ma funziona con qualsiasi Galaxy (e in generale con
-qualsiasi dispositivo Android che supporti adb).
+Funziona con **qualsiasi dispositivo Android** che supporti adb: le cartelle che
+copia (`DCIM`, `Pictures`, `Download`, `Movies`, `Music`, `Documents`) sono quelle
+standard di Android, e i comandi usati sono AOSP, non specifici di una marca.
+
+Le note che valgono solo per un produttore stanno a parte: per i Samsung, in
+[docs/vendor-samsung.md](docs/vendor-samsung.md).
 
 ---
 
@@ -20,7 +24,7 @@ sono automatizzabili. Questo repo risolve entrambe le cose:
 ## Cosa contiene
 
 ```
-galaxy-backup-mac/
+android-backup-mac/
 ├── README.md
 ├── LICENSE
 ├── AGENTS.md                       # vincoli e convenzioni del progetto
@@ -28,15 +32,15 @@ galaxy-backup-mac/
 │   ├── setup-android-mac.sh        # installa Homebrew, OpenMTP, adb
 │   └── backup-android.sh           # backup incrementale via adb
 ├── launchd/
-│   └── local.backup-galaxy.plist   # schedulazione settimanale
+│   └── local.backup-android.plist   # schedulazione settimanale
 ├── mcp/
 │   ├── server.py                   # server MCP, in sola lettura
 │   └── tests/                      # suite pytest, gira senza telefono
 └── docs/
-    ├── device-galaxy-a31.md        # scheda del dispositivo, limiti noti
     ├── wallpaper-recovery.md       # come recuperare sfondo e lock screen
     ├── mcp-verifica-manuale.md     # cosa provare col telefono collegato
-    └── pre-reset-checklist.md      # cosa fare PRIMA del factory reset
+    ├── pre-reset-checklist.md      # cosa fare PRIMA del factory reset
+    └── vendor-samsung.md           # note valide solo per i Galaxy (opzionale)
 ```
 
 ---
@@ -44,8 +48,8 @@ galaxy-backup-mac/
 ## Avvio rapido
 
 ```bash
-git clone https://github.com/albertorugnone/galaxy-backup-mac.git
-cd galaxy-backup-mac
+git clone https://github.com/albertorugnone/android-backup-mac.git
+cd android-backup-mac
 chmod +x scripts/*.sh
 
 # 1. Installa gli strumenti
@@ -60,40 +64,33 @@ adb devices
 
 # 4. Prova a vuoto, poi lancia sul serio
 DRY_RUN=1 ./scripts/backup-android.sh
-./scripts/backup-android.sh ~/Backup-Galaxy
+./scripts/backup-android.sh ~/Backup-Android
 ```
 
 ## Le due strade, e quando usarle
 
-| | Samsung Smart Switch | adb (`backup-android.sh`) | OpenMTP |
-|---|---|---|---|
-| Cosa salva | tutto: SMS, contatti, impostazioni, app | file multimediali e documenti | quello che trascini |
-| Automatizzabile | ❌ solo GUI, formato proprietario | ✅ | ❌ solo GUI |
-| Incrementale | ❌ | ✅ | ❌ |
-| Quando | una volta, prima del reset | backup ricorrente | copie occasionali |
+| | adb (`backup-android.sh`) | OpenMTP |
+|---|---|---|
+| Cosa salva | file multimediali e documenti | quello che trascini |
+| Automatizzabile | ✅ | ❌ solo GUI |
+| Incrementale | ✅ | ❌ |
+| Quando | backup ricorrente | copie occasionali |
 
-**Ordine consigliato:** backup completo con Smart Switch → disinstalla Smart Switch →
-installa OpenMTP → usa `backup-android.sh` per la routine.
+Nessuna delle due copre SMS, contatti, impostazioni e dati delle app: quelli stanno
+in `/data/`, fuori portata senza root. Per averli serve l'utility del produttore
+(su Samsung è Smart Switch), che è GUI-only e in formato proprietario — quindi
+fuori dal perimetro di questo toolkit.
 
-### ⚠️ Smart Switch e OpenMTP sono incompatibili
+### ⚠️ Utility dei produttori e MTP
 
-Smart Switch installa un'estensione di sistema che intercetta il protocollo MTP e
-impedisce a OpenMTP di rilevare il dispositivo. Gli sviluppatori di OpenMTP
-raccomandano di disinstallarlo. Vedi
-<https://github.com/ganeshrvel/openmtp#troubleshooting>.
+Alcune utility desktop dei produttori installano un'estensione di sistema che
+intercetta MTP e **impedisce a OpenMTP di vedere il telefono**. `setup-android-mac.sh`
+le rileva e lo segnala. Il caso documentato è Smart Switch di Samsung, descritto in
+[docs/vendor-samsung.md](docs/vendor-samsung.md) insieme alla precauzione da
+prendere con adb.
 
-Samsung avverte inoltre che Smart Switch **non convive con Android File Transfer**:
-se hai l'app di Google installata, Smart Switch non parte finché non la rimuovi.
-Vedi la
-[FAQ ufficiale](https://www.samsung.com/au/apps/smart-switch/faq-smart-switch-pc-or-mac).
-
-Sull'interazione fra Smart Switch e **adb** non esiste documentazione ufficiale, in
-nessuna delle due direzioni. Per prudenza non usarli insieme: `adb kill-server`
-prima di aprire Smart Switch. I dettagli, e cosa è dimostrato e cosa no, stanno in
-[docs/pre-reset-checklist.md](docs/pre-reset-checklist.md).
-
-Smart Switch **non** è disponibile su Homebrew: va scaricato manualmente da
-<https://www.samsung.com/it/apps/smart-switch/>.
+Il backup via adb, che è la strada principale di questo repo, **non è toccato** dal
+problema.
 
 ---
 
@@ -105,19 +102,19 @@ cp scripts/backup-android.sh ~/Scripts/
 chmod +x ~/Scripts/backup-android.sh
 
 # il sed va fatto sulla COPIA, non sul file versionato
-cp launchd/local.backup-galaxy.plist ~/Library/LaunchAgents/
-sed -i '' "s|TUONOME|$USER|g" ~/Library/LaunchAgents/local.backup-galaxy.plist
+cp launchd/local.backup-android.plist ~/Library/LaunchAgents/
+sed -i '' "s|TUONOME|$USER|g" ~/Library/LaunchAgents/local.backup-android.plist
 
-launchctl load ~/Library/LaunchAgents/local.backup-galaxy.plist
+launchctl load ~/Library/LaunchAgents/local.backup-android.plist
 ```
 
-Per disattivarlo: `launchctl unload ~/Library/LaunchAgents/local.backup-galaxy.plist`
+Per disattivarlo: `launchctl unload ~/Library/LaunchAgents/local.backup-android.plist`
 
 Per provarlo subito senza aspettare domenica:
 
 ```bash
-launchctl kickstart -p gui/$(id -u)/local.backup-galaxy
-cat ~/Library/Logs/backup-galaxy.err
+launchctl kickstart -p gui/$(id -u)/local.backup-android
+cat ~/Library/Logs/backup-android.err
 ```
 
 Il plist imposta esplicitamente `PATH` con i percorsi di Homebrew: launchd non
@@ -179,7 +176,7 @@ mcp/.venv/bin/python -m pytest mcp      # 56 test, non serve il telefono
 ### Claude Code
 
 ```bash
-claude mcp add galaxy-backup -- "$PWD/mcp/.venv/bin/python" "$PWD/mcp/server.py"
+claude mcp add android-backup -- "$PWD/mcp/.venv/bin/python" "$PWD/mcp/server.py"
 ```
 
 ### Claude Desktop
@@ -192,7 +189,7 @@ eseguito nella cartella del progetto.
 ```json
 {
   "mcpServers": {
-    "galaxy-backup": {
+    "android-backup": {
       "command": "/PERCORSO/DEL/REPO/mcp/.venv/bin/python",
       "args": ["/PERCORSO/DEL/REPO/mcp/server.py"]
     }
@@ -204,9 +201,9 @@ Riavvia Claude Desktop dopo la modifica.
 
 ### Stato dei backup
 
-I job vivono in `~/.galaxy-backup/jobs/` come file JSON, quindi sopravvivono al
+I job vivono in `~/.android-backup/jobs/` come file JSON, quindi sopravvivono al
 riavvio del server. Un backup avviato via MCP continua anche se il server viene
-chiuso. Le schermate catturate finiscono in `~/.galaxy-backup/screenshots/`.
+chiuso. Le schermate catturate finiscono in `~/.android-backup/screenshots/`.
 
 ---
 

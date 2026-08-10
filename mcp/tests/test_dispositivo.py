@@ -16,7 +16,7 @@ def test_dispositivo_collegato(amb):
     esito = esegui(amb.server.device_status())
     assert esito["collegato"] is True
     assert esito["stato"] == "device"
-    assert esito["modello"] == "SM-A315F"
+    assert esito["modello"] == "TEST-DEVICE-1"
     assert esito["android"] == "12"
     # 20971520 blocchi da 1K nell'output finto di df
     assert esito["spazio_libero_bytes"] == 20971520 * 1024
@@ -52,7 +52,7 @@ def test_adb_non_installato(amb, monkeypatch):
 
 def test_cattura_schermo(amb):
     esito = esegui(amb.server.capture_screen())
-    percorso = amb.casa / ".galaxy-backup" / "screenshots"
+    percorso = amb.casa / ".android-backup" / "screenshots"
     assert esito["percorso"].startswith(str(percorso))
     assert esito["byte"] == len(amb.png_atteso)
     # il PNG viene salvato su disco, i byte non finiscono nella risposta
